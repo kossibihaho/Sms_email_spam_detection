@@ -1,0 +1,4 @@
+Modele,CV_F1,CV_F1_std,Test_precision,Test_recall,Test_F1,Test_AUC,FP,FN,meilleurs_params
+LinearSVC,0.9598399576135737,0.005735071208889505,0.9917355371900827,0.916030534351145,0.9523809523809523,0.9977851605758582,1,11,"{""clf__C"": 3, ""clf__class_weight"": ""balanced"", ""features__tfidf__max_features"": null}"
+LogisticRegression,0.9573665580429773,0.0035869062050407265,0.9761904761904762,0.9389312977099237,0.9571984435797666,0.9969905235305555,3,8,"{""clf__C"": 100, ""clf__class_weight"": ""balanced"", ""features__tfidf__max_features"": 3000}"
+BernoulliNB,0.9542596889150303,0.009020033165781814,0.9918032786885246,0.9236641221374046,0.9565217391304348,0.9987742300896926,1,10,"{""clf__alpha"": 0.3, ""features__tfidf__max_features"": 2000}"
