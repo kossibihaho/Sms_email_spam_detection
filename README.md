@@ -2,7 +2,6 @@
 
 Projet académique de groupe en Machine Learning : détecter et classifier les messages indésirables (spam) à l'aide de plusieurs algorithmes d'apprentissage automatique, avec une application web Streamlit.
 
-**Démo en ligne :** _à compléter après le déploiement (voir « Déploiement »)_
 
 ## Équipe
 
@@ -130,10 +129,6 @@ python -m pytest -q
 ```
 
 Les tests couvrent le chargement des données, le prétraitement, les caractéristiques (dont le plafond de longueur), l'absence de fuite de données, le modèle sauvegardé (dont un test de non-régression sur un email long légitime), les métriques minimales et le chargement de chaque page de l'application.
-
-## Déploiement
-
-Application déployable sur [Streamlit Community Cloud](https://share.streamlit.io) : dépôt `kossibihaho/Sms_email_spam_detection`, branche `main`, fichier principal `app/streamlit_app.py`. Choisir dans « Advanced settings » la **même version de Python** que celle utilisée pour entraîner le modèle.
 
 ## Source des données
 
