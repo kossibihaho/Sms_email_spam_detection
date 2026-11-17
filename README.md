@@ -1,8 +1,6 @@
-# 📩 Détection de SMS / emails indésirables (Spam)
+# Détection de SMS et d'emails indésirables (spam)
 
-Projet académique de groupe en Machine Learning : détecter et classifier les messages indésirables (spam) à l'aide de plusieurs algorithmes d'apprentissage automatique, avec une application web Streamlit.
-
-**Démo en ligne :** _à compléter après le déploiement (voir « Déploiement »)_
+Projet académique de groupe en Machine Learning : détecter et classifier les SMS et emails indésirables (spam) à l'aide de plusieurs algorithmes d'apprentissage automatique. Le travail principal est dans un notebook ; une petite application Streamlit permet d'essayer le modèle final.
 
 ## Équipe
 
@@ -13,128 +11,103 @@ Projet académique de groupe en Machine Learning : détecter et classifier les m
 | IRERA Furaha Jospine | [@jospine463](https://github.com/jospine463/) |
 | RAKOTOMANGA Manohisoa Mireille | [@soamanohy](https://github.com/soamanohy) |
 
-**Encadrant :** Prof. Mr [Ayoub Charef](https://www.linkedin.com/in/ayoub-charef-531897128/)
+Encadrant : Prof. Mr [Ayoub Charef](https://www.linkedin.com/in/ayoub-charef-531897128/)
 
-## Résultats en bref
-
-Modèle final : **régression logistique** (TF-IDF 3 000 mots + 5 caractéristiques, `class_weight="balanced"`, C = 30), évalué sur **1 034 messages jamais vus** à l'entraînement.
-
-| Précision | Rappel | F1 | AUC ROC | Faux positifs | Faux négatifs |
-|---|---|---|---|---|---|
-| 0,976 | 0,931 | 0,953 | 0,997 | 3 | 9 |
-
-> Les chiffres exacts sont dans `reports/metrics.json` (régénérés à chaque entraînement).
-
-## Données
-
-[SMS Spam Collection](https://archive.ics.uci.edu/dataset/228/sms+spam+collection) : 5 572 SMS **en anglais**, 5 169 après suppression de 403 doublons. Classes déséquilibrées : 4 516 hams (87,4 %) et 653 spams (12,6 %). Le fichier source contient un défaut d'encodage (`å£` au lieu de `£`), corrigé au chargement.
-
-## Méthodologie
-
-1. **Nettoyage** : colonnes vides retirées, doublons supprimés, symbole `£` réparé.
-2. **Prétraitement** : minuscules, tokens alphanumériques, suppression des stopwords, stemming de Porter.
-3. **Variables** : TF-IDF + 5 caractéristiques (longueur plafonnée à 160 caractères, part de chiffres, part de majuscules, symboles monétaires, présence d'un lien).
-4. **Évaluation** : split stratifié 80/20 ; validation croisée à 5 plis sur le train uniquement ; test utilisé une seule fois. Métriques : précision, rappel, F1, AUC, faux positifs/négatifs.
-5. **Comparaison** de 14 modèles, expériences contrôlées, puis réglage par `GridSearchCV` des 3 meilleures familles.
-
-### Benchmark (validation croisée, F1)
-
-| Modèle | CV F1 | Test précision | Test rappel |
-|---|---|---|---|
-| LinearSVC | 0,954 | 0,992 | 0,901 |
-| SVC rbf | 0,951 | 0,992 | 0,908 |
-| RandomForest | 0,936 | 0,983 | 0,886 |
-| ExtraTrees | 0,934 | 0,983 | 0,893 |
-| BernoulliNB | 0,920 | 0,983 | 0,901 |
-
-Les 14 modèles sont dans `reports/benchmark.csv`.
-
-### Ce que les expériences ont montré
-
-- Les **caractéristiques supplémentaires** sont le seul gain solide : LinearSVC passe de 0,913 à 0,954 de F1 et la régression logistique de 0,899 à 0,948.
-- Le nombre de mots (`max_features`) et les n-grammes n'ont **pas d'effet significatif** sur les modèles linéaires.
-- Après réglage, **LinearSVC, régression logistique et BernoulliNB sont à égalité statistique** (CV F1 de 0,955 à 0,962, écart-type de 0,006 à 0,010). La régression logistique a été retenue car elle fournit des scores directement exploitables et des coefficients interprétables.
-
-![Comparaison des modèles](reports/figures/benchmark_f1.png)
-![Matrice de confusion](reports/figures/confusion_matrix.png)
-![ROC et précision-rappel](reports/figures/roc_pr.png)
-![Mots les plus influents](reports/figures/top_words.png)
-
-### Corrections apportées au notebook initial
-
-Le notebook d'origine est conservé dans `notebooks/01_notebook_initial.ipynb`. Ses chiffres (par exemple 98,4 % d'accuracy) **ne sont pas comparables** à ceux ci-dessus : le protocole a changé.
-
-| Problème du notebook initial | Correction |
-|---|---|
-| TF-IDF et scaler ajustés sur tout le jeu de données (fuite de données) | `Pipeline` scikit-learn : tout est ajusté sur le train uniquement |
-| Un seul split, sélection sur la précision seule | Validation croisée, F1 / rappel / AUC, test utilisé une seule fois |
-| Section « amélioration » sans ré-entraînement (colonnes identiques) | Vraies expériences contrôlées (`src/experiments.py`) |
-| Modèle sauvegardé non entraîné, scaler non sauvegardé | Pipeline complet sauvegardé et testé |
-| Chemin Windows en dur, pas de `requirements`, README vide | Chemins relatifs, dépendances figées, tests automatiques |
-| Artefact d'encodage `å£` | Corrigé au chargement |
-| Longueur non plafonnée : un email légitime long était classé spam | Plafond à 160 caractères + test de non-régression |
-
-## Limites
-
-- **Anglais uniquement** : les messages en français ne sont pas fiables (l'application affiche un avertissement).
-- **SMS, pas emails** : le modèle n'a vu aucun vrai email. Il se comporte raisonnablement sur des emails courts à moyens, mais n'a **pas été validé** sur un corpus d'emails. Les emails parlant d'argent (factures) restent à risque de faux positif.
-- **Jeu de données ancien** : les spams actuels (phishing, livraisons, cryptomonnaies) y sont peu représentés.
-- **Artefact appris** : `gt` et `lt` (restes d'entités HTML dans des SMS légitimes) sont des indices « ham » : le modèle a appris un défaut du jeu de données.
-- Le modèle déployé est ré-entraîné sur toutes les données : il n'a plus de jeu de test indépendant. Les métriques annoncées viennent du modèle entraîné sur le train seul.
-
-## Structure du dépôt
+## Contenu du dépôt
 
 ```
-├── app/streamlit_app.py     # application Streamlit
-├── data/spam.csv            # données brutes
-├── models/spam_model.joblib # modèle de déploiement
-├── notebooks/               # notebook initial (conservé)
-├── reports/                 # métriques, tableaux CSV, figures
-├── src/                     # code : données, prétraitement, pipeline, modèles, benchmark, réglage
-├── tests/                   # tests pytest
-├── run_all.sh               # régénère tout et lance les tests
-├── requirements.txt         # dépendances de l'application
-└── requirements-dev.txt     # dépendances d'entraînement et de test
+sms-spam-detection.ipynb   notebook principal : nettoyage, analyse, modèles, résultats
+spam.csv                   jeu de données (SMS en anglais)
+spam_utils.py              fonctions de prétraitement, écrites par le notebook et utilisées par l'application
+app.py                     application Streamlit
+models/spam_model.joblib   modèle final, produit par le notebook
+reports/                   résultats : tableaux (CSV), métriques (JSON) et figures (PNG)
+requirements.txt           bibliothèques nécessaires
 ```
 
-## Installation (Git Bash)
+## Installation
+
+Avec Git Bash :
 
 ```bash
 git clone https://github.com/kossibihaho/Sms_email_spam_detection.git
 cd Sms_email_spam_detection
 python -m venv .venv
-source .venv/Scripts/activate        # Linux / macOS : source .venv/bin/activate
-pip install -r requirements-dev.txt
+source .venv/Scripts/activate        # Linux et macOS : source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
 ## Utilisation
 
-```bash
-# Lancer l'application (le modèle est déjà fourni)
-streamlit run app/streamlit_app.py
+1. **Notebook** : lancer `jupyter notebook`, ouvrir `sms-spam-detection.ipynb`, puis *Kernel > Restart & Run All*. L'exécution complète prend environ 6 à 7 minutes. Elle crée `spam_utils.py`, `models/` et `reports/`.
+2. **Application** : `streamlit run app.py`.
 
-# Tout régénérer : benchmark, expériences, réglage, modèle final, tests
-bash run_all.sh
+Le dépôt contient déjà les fichiers produits par le notebook : l'application peut être lancée sans le réexécuter.
 
-# Ou étape par étape
-python -m src.benchmark
-python -m src.experiments
-python -m src.tune
-python -m src.train_final
-```
+## Données
 
-## Tests
+SMS Spam Collection : 5 572 SMS en anglais, 5 169 après suppression de 403 doublons. On y trouve 4 516 messages normaux (87,4 %) et 653 spams (12,6 %). Le fichier contient un défaut d'encodage (« å£ » à la place de « £ »), corrigé au chargement.
 
-```bash
-python -m pytest -q
-```
+## Méthode
 
-Les tests couvrent le chargement des données, le prétraitement, les caractéristiques (dont le plafond de longueur), l'absence de fuite de données, le modèle sauvegardé (dont un test de non-régression sur un email long légitime), les métriques minimales et le chargement de chaque page de l'application.
+1. Nettoyage des données et analyse exploratoire (longueur des messages, mots les plus fréquents).
+2. Prétraitement du texte : minuscules, mots alphanumériques, suppression des mots vides, réduction des mots à leur racine (Porter).
+3. Séparation entraînement / test en premier (80 % / 20 %, mêmes proportions de spam). Tout ce qui est appris (vocabulaire, échelles, spams générés) l'est sur l'entraînement uniquement, grâce à un `Pipeline`.
+4. Variables : TF-IDF et cinq caractéristiques simples (longueur plafonnée à 160 caractères, part de chiffres, part de majuscules, symboles monétaires, présence d'un lien).
+5. Équilibrage des classes : SMOTE génère des spams synthétiques dans l'ensemble d'entraînement (de 522 à 3 613 spams). Le jeu de test n'est jamais modifié.
+6. Comparaison de 14 modèles par validation croisée à 5 plis, réglage de trois d'entre eux, puis deux ensembles (Voting et Stacking).
+7. Modèle final : régression logistique.
 
-## Déploiement
+## Résultats
 
-Application déployable sur [Streamlit Community Cloud](https://share.streamlit.io) : dépôt `kossibihaho/Sms_email_spam_detection`, branche `main`, fichier principal `app/streamlit_app.py`. Choisir dans « Advanced settings » la **même version de Python** que celle utilisée pour entraîner le modèle.
+Évaluation sur 1 034 messages (dont 131 spams) que le modèle n'a pas vus pendant son entraînement :
+
+| Précision | Rappel | F1 | AUC ROC | Messages normaux classés spam | Spams non détectés |
+|---|---|---|---|---|---|
+| 0,984 | 0,931 | 0,957 | 0,997 | 2 | 9 |
+
+Ce que les expériences ont montré (régression logistique, validation croisée sur l'entraînement) :
+
+| Équilibrage des classes | F1 | Rappel | Précision |
+|---|---|---|---|
+| Aucun | 0,933 | 0,889 | 0,983 |
+| Poids des classes (`class_weight`) | 0,956 | 0,946 | 0,965 |
+| Duplication aléatoire des spams | 0,955 | 0,944 | 0,967 |
+| SMOTE (spams générés) | 0,959 | 0,943 | 0,977 |
+
+- Équilibrer les classes améliore nettement le rappel (de 0,889 à environ 0,945). Les trois méthodes donnent des résultats équivalents : leurs écarts sont plus petits que l'écart-type (environ 0,005).
+- Les cinq caractéristiques supplémentaires font passer le F1 de 0,899 à 0,959.
+- La taille du vocabulaire et les n-grammes n'ont pas d'effet visible (F1 entre 0,955 et 0,959).
+- Après réglage, la régression logistique (0,961), le stacking (0,961), LinearSVC (0,960) et le voting (0,957) sont à égalité compte tenu de l'écart-type. Nous avons gardé la régression logistique parce que ses coefficients permettent à l'application d'expliquer chaque décision.
+
+Les chiffres peuvent varier légèrement selon la version des bibliothèques.
+
+## Ce que nous avons corrigé par rapport au premier notebook
+
+| Dans le premier notebook | Maintenant |
+|---|---|
+| Chemin de fichier propre à un ordinateur (`C:/Users/...`) | `spam.csv` à côté du notebook |
+| Vocabulaire TF-IDF et échelles calculés sur toutes les données avant la séparation entraînement / test | Séparation en premier ; tout est appris sur l'entraînement uniquement |
+| Un seul découpage, choix du modèle sur la précision | Validation croisée, F1, rappel, AUC, faux positifs et faux négatifs |
+| Déséquilibre des classes constaté mais non traité | SMOTE dans l'entraînement, comparé à deux autres méthodes |
+| Section « amélioration » qui ne réentraînait rien (colonnes identiques) | Vraies expériences, une variable à la fois |
+| Sauvegarde avec `pickle` du vectoriseur et du modèle, sans l'échelle nécessaire | Pipeline complet sauvegardé avec `joblib`, rechargement testé hors du notebook |
+| Messages avec « å£ » à la place de « £ » | Corrigé au chargement |
+| Un email légitime long était classé spam à cause de sa longueur | Longueur plafonnée à 160 caractères |
+
+Les chiffres du premier notebook (par exemple 98 % d'accuracy) ne sont pas comparables à ceux d'aujourd'hui : le protocole a changé.
+
+## Limites
+
+- Le modèle n'a appris que sur des SMS en anglais. Les messages en français ne sont pas fiables.
+- Il n'a jamais été évalué sur de vrais emails. Nous avons essayé six emails écrits à la main : ils sont bien classés, le plus difficile (une facture) obtient un score de spam de 32,5 %. Six exemples ne constituent pas une évaluation.
+- Le jeu de données est ancien : il contient peu de spams récents (hameçonnage, faux colis, cryptomonnaies).
+- Le jeu de test ne contient que 131 spams. Manquer un spam de plus change le rappel de 0,8 point, et les écarts de 0,005 en F1 entre modèles ne sont pas significatifs.
+- SMOTE n'est pas démontré meilleur que `class_weight` ou la duplication. Il crée des vecteurs de nombres, pas des messages lisibles.
+- Le modèle exporté est réentraîné sur toutes les données : les résultats annoncés viennent de la version entraînée sur l'ensemble d'entraînement seul.
+- Le modèle a retenu un défaut du jeu de données : la chaîne « &lt;#&gt; » apparaît dans 222 messages normaux et dans aucun spam, donc « gt » et « lt » comptent comme des indices de message normal.
+- Le meilleur paramètre C de la régression logistique (100) est le plus grand de ceux testés. Nous n'avons pas cherché plus loin.
 
 ## Source des données
 
-Almeida, T. A., Gómez Hidalgo, J. M., Yamakami, A. (2011). *Contributions to the study of SMS spam filtering.* UCI Machine Learning Repository.
+SMS Spam Collection, [UCI Machine Learning Repository](https://archive.ics.uci.edu/dataset/228/sms+spam+collection). Almeida, T. A., Gómez Hidalgo, J. M. et Yamakami, A. (2011), *Contributions to the study of SMS spam filtering: new collection and results*.
